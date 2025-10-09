@@ -1,17 +1,55 @@
+# This workflow name will appear in the GitHub Actions UI.
 name: CI
+
+# This workflow runs on pull requests targeting the 'main' branch
+# and also after pushes are made to the 'main' branch.
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  push:
+    branches: ["main"]
 
 jobs:
+  # The 'node' job runs all our CI steps.
   node:
     runs-on: ubuntu-latest
+    
+    # Best Practice: Harden the workflow by setting default read-only permissions.
     permissions:
       contents: read
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js with caching
+        # This step sets up Node.js and configures caching for npm dependencies,
+        # which significantly speeds up subsequent builds.
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm ci || npm i
-      - run: npm test --if-present
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        # 'npm ci' is used for a clean, reproducible install from the lockfile.
+        # 'npm install' is a fallback for environments without a lockfile.
+        run: npm ci || npm install
+
+      - name: Run smoke tests
+        # This runs the test suite defined in package.json if it exists.
+        # It serves as a quick validation that the changes haven't broken anything.
+        run: npm test --if-present
+
+      - name: Run npm audit (non-blocking)
+        # This step checks for vulnerabilities but is non-blocking (|| true).
+        # It ensures the team is aware of vulnerabilities without blocking PRs,
+        # allowing for a separate remediation process.
+        run: npm audit --json > audit.json || true
+      
+      - name: Upload audit results as artifact
+        # The audit report is uploaded as an artifact, making it easy to
+        # download and inspect the detailed vulnerability findings.
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit
