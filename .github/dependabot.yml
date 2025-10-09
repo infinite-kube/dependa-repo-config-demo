@@ -1,61 +1,70 @@
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
 version: 2
 updates:
-  # Keep npm up to date, but reduce noise with grouping and limits
+  # === NPM DEPENDENCIES ===
+  # Configuration for the main application's npm packages.
   - package-ecosystem: "npm"
     directory: "/"
+
+    # Tune cadence & windows: Set weekly updates at a quiet time (Tue 9 AM ET).
     schedule:
-      # Pick a manageable cadence; weekly is a good default at scale
       interval: "weekly"
       day: "tuesday"
       time: "09:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 3  # cap concurrent PRs to avoid overload
-    labels: ["dependencies", "dependabot"]
+
+    # Cap the firehose: Limit open PRs to prevent overwhelming the team.
+    open-pull-requests-limit: 3
+
+    # Housekeeping: Apply labels, use conventional commits, and auto-rebase.
+    labels:
+      - "dependencies"
+      - "dependabot"
     commit-message:
       prefix: "chore"
       include: "scope"
+    rebase-strategy: "auto"
 
-    # Optional: slow down flood-y ecosystems with a cooldown
-    cooldown:
-      default-days: 3
-      semver-major-days: 14
-      semver-minor-days: 5
-      semver-patch-days: 2
-
-    # Grouping rules to cut PR volume but keep risk separated
+    # Group to cut PR count: Combine safe minor/patch updates, but keep majors separate.
     groups:
-      # fast lane: dev-tooling bumps together (minor+patch)
+      # Group related development tools for minor and patch updates.
       dev-tools-minor-patch:
         dependency-type: "development"
-        update-types: ["minor", "patch"]
+        update-types:
+          - "minor"
+          - "patch"
         patterns:
           - "eslint"
           - "@eslint/*"
+          - "prettier"
           - "typescript"
           - "vitest"
           - "jest*"
-      # runtime deps: minor+patch all together
+      
+      # Group all production dependencies for minor and patch updates.
       runtime-minor-patch:
         dependency-type: "production"
-        update-types: ["minor", "patch"]
-        patterns: ["*"]
-        exclude-patterns:
-          - "lodash"    # example: keep this separate if you want extra review
-      # majors always isolated
-      majors:
-        update-types: ["major"]
-        patterns: ["*"]
+        update-types:
+          - "minor"
+          - "patch"
 
-    # Example: ignore *patch* updates for very chatty packages
+    # Target scope: Fine-tune which dependencies and versions to update.
+    # 1. Ignore chatty patch bumps, e.g., for eslint during a release freeze.
     ignore:
       - dependency-name: "eslint*"
         update-types: ["version-update:semver-patch"]
 
-  # Keep GitHub Actions up to date on a light cadence
+    # 2. Allow only direct dependencies for a repo with limited test coverage.
+    allow:
+      - dependency-type: "direct"
+
+  # === GITHUB ACTIONS ===
+  # Keep GitHub Actions up to date on a lighter, monthly cadence.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
-      time: "09:30"
-      timezone: "America/New_York"
     open-pull-requests-limit: 2
+    labels:
+      - "ci"
+      - "dependencies"
