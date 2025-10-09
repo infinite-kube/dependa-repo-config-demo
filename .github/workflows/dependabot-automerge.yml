@@ -1,24 +1,39 @@
-name: Dependabot automerge (minor/patch only)
+# This workflow name will appear in the GitHub Actions UI.
+name: Dependabot Auto-Merge
+
 on:
+  # Use 'pull_request_target' for security. This event runs in the context
+  # of the base repository and has access to secrets, but it uses the
+  # workflow file from the base branch, preventing PRs from running
+  # malicious, modified workflow code.
   pull_request_target:
     types: [opened, synchronize, reopened, labeled]
 
+# These permissions are required for the action to read PR metadata
+# and enable the auto-merge setting.
 permissions:
   pull-requests: write
   contents: write
 
 jobs:
   automerge:
+    # The job will only run if the author of the PR is the Dependabot app.
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    
     steps:
       - name: Fetch Dependabot metadata
+        # This action retrieves details about the Dependabot update,
+        # most importantly, whether it's a major, minor, or patch update.
         id: meta
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Enable auto-merge if minor/patch
+      - name: Enable auto-merge for minor and patch updates
+        # This step runs ONLY for minor or patch version updates.
+        # It tells GitHub to merge the PR automatically once all required
+        # status checks (like your CI workflow) have passed.
         if: |
           steps.meta.outputs.update-type == 'version-update:semver-minor' ||
           steps.meta.outputs.update-type == 'version-update:semver-patch'
