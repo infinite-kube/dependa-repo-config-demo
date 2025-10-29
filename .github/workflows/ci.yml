@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js with caching
         # This step sets up Node.js and configures caching for npm dependencies,
         # which significantly speeds up subsequent builds.
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
