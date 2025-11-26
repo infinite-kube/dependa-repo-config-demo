@@ -2,21 +2,21 @@
 version: 2
 updates:
   # === NPM DEPENDENCIES ===
-  # Configuration for the main application's npm packages.
   - package-ecosystem: "npm"
     directory: "/"
 
-    # Tune cadence & windows: Set weekly updates at a quiet time (Tue 9 AM ET).
+    # Tune cadence: Weekly is perfect for scale. Tuesday 9AM is fine.
     schedule:
       interval: "weekly"
       day: "tuesday"
       time: "09:00"
       timezone: "America/New_York"
 
-    # Cap the firehose: Limit open PRs to prevent overwhelming the team.
-    open-pull-requests-limit: 3
+    # MERGE UPDATE: Increased from 3 to 10. 
+    # At scale, 3 is too strict and blocks important security updates if groups are pending.
+    open-pull-requests-limit: 10
 
-    # Housekeeping: Apply labels, use conventional commits, and auto-rebase.
+    # Housekeeping: Keep these, they are excellent for repo hygiene.
     labels:
       - "dependencies"
       - "dependabot"
@@ -25,48 +25,55 @@ updates:
       include: "scope"
     rebase-strategy: "auto"
 
-    # Group to cut PR count: Combine safe minor/patch updates, but keep majors separate.
+    # === GROUPING STRATEGY ===
     groups:
-      # Group related development tools for minor and patch updates.
-      dev-tools-minor-patch:
+      # MERGE UPDATE: Broadened to Catch-All ("*")
+      # Instead of listing specific tools (eslint, etc.), we group ALL dev dependencies.
+      # This scales better because you don't have to edit this file when you add new tools.
+      development-dependencies:
         dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
         patterns:
-          - "eslint"
-          - "@eslint/*"
-          - "prettier"
-          - "typescript"
-          - "vitest"
-          - "jest*"
-      
+          - "*" 
+        # Explicitly exclude packages you want to review individually
+        exclude-patterns:
+          - "webpack" 
+
       # Group all production dependencies for minor and patch updates.
-      runtime-minor-patch:
+      runtime-dependencies:
         dependency-type: "production"
         update-types:
           - "minor"
           - "patch"
+        patterns:
+          - "*"
+        # MERGE UPDATE: Exclusion Example
+        # Exclude high-risk/heavy packages so they get their own isolated PR.
+        exclude-patterns:
+          - "aws-sdk*"
 
-    # Target scope: Fine-tune which dependencies and versions to update.
-    # 1. Ignore chatty patch bumps, e.g., for eslint during a release freeze.
+    # === SCOPING & IGNORES ===
+    # Keep these specific rules from your original file.
     ignore:
       - dependency-name: "eslint*"
         update-types: ["version-update:semver-patch"]
 
-    # 2. Allow only direct dependencies for a repo with limited test coverage.
     allow:
       - dependency-type: "direct"
 
   # === GITHUB ACTIONS ===
-  # Keep GitHub Actions up to date on a lighter, monthly cadence.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 5 # Increased slightly
     labels:
       - "ci"
       - "dependencies"
-
-      #Add more details.
+    groups:
+      # Grouping Actions is also smart at scale
+      all-actions:
+        patterns:
+          - "*"
