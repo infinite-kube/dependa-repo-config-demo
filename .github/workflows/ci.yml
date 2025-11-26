@@ -20,12 +20,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js with caching
         # This step sets up Node.js and configures caching for npm dependencies,
         # which significantly speeds up subsequent builds.
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -49,7 +49,7 @@ jobs:
       - name: Upload audit results as artifact
         # The audit report is uploaded as an artifact, making it easy to
         # download and inspect the detailed vulnerability findings.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: npm-audit-report
           path: audit
