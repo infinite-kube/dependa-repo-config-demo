@@ -19,6 +19,24 @@ Scheduling: Restricts updates to specific time windows to prevent mid-sprint dis
 
 Auto-Merging: Automatically approves and merges safe (minor/patch) updates passing CI.
 
+
+## Update Categories
+
+### 1. Security Patches (CVE fixes)
+- **Auto-merge**: Yes (if tests pass)
+- **Deployment**: Rolling update
+- **Rollback**: Automatic on failure
+
+### 2. Minor Updates (Features)
+- **Auto-merge**: After 1 approval
+- **Deployment**: Blue-green
+- **Rollback**: Manual trigger
+
+### 3. Major Updates (Breaking changes)
+- **Auto-merge**: No
+- **Deployment**: Canary (10% → 50% → 100%)
+- **Rollback**: Prepared rollback plan required
+
  Repository Configuration
 1. Optimized dependabot.yml
 Located in .github/dependabot.yml, this configuration controls how updates are generated.
