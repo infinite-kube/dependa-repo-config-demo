@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.23</version>
+            <version>42.3.9</version>
             <!-- Current: 42.7.1 (security fixes) -->
         </dependency>
         
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.14.1</version>
+            <version>2.17.1</version>
             <!-- CRITICAL: Contains CVE-2021-44228 (Log4Shell) -->
             <!-- Must update to at least 2.17.0 -->
         </dependency>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.6</version>
+            <version>2.14.0</version>
             <!-- CVE-2021-29425 - Directory Traversal -->
             <!-- Should use 2.7 or later -->
         </dependency>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.9</version>
+            <version>1.10.0</version>
             <!-- CVE-2022-42889 - RCE vulnerability -->
             <!-- Should use 1.10.0 or later -->
         </dependency>
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.12.5</version>
+            <version>2.12.7.1</version>
             <!-- Multiple CVEs fixed in 2.15.3 -->
         </dependency>
 
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>9.0.54</version>
+            <version>9.0.110</version>
             <!-- Multiple CVEs fixed in 9.0.83 -->
         </dependency>
 
@@ -170,7 +170,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>30.1.1-jre</version>
+            <version>32.0.0-jre</version>
             <!-- Current: 32.1.3-jre -->
         </dependency>
         
