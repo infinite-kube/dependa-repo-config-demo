@@ -135,3 +135,18 @@ updates:
       prefix: "fix"
       prefix-development: "fix"
       include: "scope"
+
+   - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "16:45"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 20
+    labels:
+      - "security"
+      - "patch"
+    commit-message:
+      prefix: "fix"
+      prefix-development: "fix"
+      include: "scope"
