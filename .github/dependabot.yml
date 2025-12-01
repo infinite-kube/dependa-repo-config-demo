@@ -12,7 +12,6 @@ updates:
     # Tune cadence: Weekly is perfect for scale. Tuesday 9AM is fine.
     schedule:
       interval: "daily"
-      day: "monday"
       time: "16:45"
       timezone: "America/New_York"
 
