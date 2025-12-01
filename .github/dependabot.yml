@@ -12,8 +12,6 @@ updates:
     # Tune cadence: Weekly is perfect for scale. Tuesday 9AM is fine.
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
 
     # MERGE UPDATE: Increased from 3 to 10. 
     # At scale, 3 is too strict and blocks important security updates if groups are pending.
@@ -69,8 +67,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
     open-pull-requests-limit: 5 # Increased slightly
     labels:
       - "ci"
@@ -91,9 +87,7 @@ updates:
     directory: "/frontend"
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 50
     versioning-strategy: "increase"
     labels:
       - "dependencies"
@@ -108,8 +102,6 @@ updates:
     directory: "/backend"
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
     allow:
       - dependency-type: "all"
     ignore:
@@ -125,9 +117,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 50
     labels:
       - "security"
       - "patch"
@@ -140,9 +130,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-      time: "16:45"
-      timezone: "America/New_York"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 50
     labels:
       - "security"
       - "patch"
