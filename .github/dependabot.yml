@@ -1,10 +1,14 @@
 # yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
 version: 2
 updates:
-  # === NPM DEPENDENCIES ===
+  # ==========================================
+  # SECTION 1 CONFIGURATION
+  # ==========================================
+  
+  # === NPM DEPENDENCIES (ROOT) ===
   - package-ecosystem: "npm"
     directory: "/"
-
+    
     # Tune cadence: Weekly is perfect for scale. Tuesday 9AM is fine.
     schedule:
       interval: "weekly"
@@ -29,7 +33,6 @@ updates:
     groups:
       # MERGE UPDATE: Broadened to Catch-All ("*")
       # Instead of listing specific tools (eslint, etc.), we group ALL dev dependencies.
-      # This scales better because you don't have to edit this file when you add new tools.
       development-dependencies:
         dependency-type: "development"
         update-types:
@@ -55,7 +58,6 @@ updates:
           - "aws-sdk*"
 
     # === SCOPING & IGNORES ===
-    # Keep these specific rules from your original file.
     ignore:
       - dependency-name: "eslint*"
         update-types: ["version-update:semver-patch"]
@@ -77,3 +79,52 @@ updates:
       all-actions:
         patterns:
           - "*"
+
+  # ==========================================
+  # SECTION 2 CONFIGURATION
+  # ==========================================
+
+  # Major Updates Example - Allow all updates including major versions
+  # Targeted specifically at the /frontend directory
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    versioning-strategy: "increase"
+    labels:
+      - "dependencies"
+      - "major-update"
+    commit-message:
+      prefix: "feat"
+      prefix-development: "chore"
+      include: "scope"
+    
+  # Minor Updates Example - Restrict to minor and patch only
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignore major version updates for critical packages
+      - dependency-name: "django"
+        versions: ["4.x", "5.x"]
+    labels:
+      - "dependencies"
+      - "minor-update"
+    
+  # Security Patching Example - Security updates only
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 20
+    labels:
+      - "security"
+      - "patch"
+    commit-message:
+      prefix: "fix"
+      prefix-development: "fix"
+      include: "scope"
