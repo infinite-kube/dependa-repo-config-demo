@@ -68,7 +68,9 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "daily"
+      time: "16:45"
+      timezone: "America/New_York"
     open-pull-requests-limit: 5 # Increased slightly
     labels:
       - "ci"
@@ -88,7 +90,9 @@ updates:
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+      time: "16:45"
+      timezone: "America/New_York"
     open-pull-requests-limit: 10
     versioning-strategy: "increase"
     labels:
@@ -104,6 +108,8 @@ updates:
     directory: "/backend"
     schedule:
       interval: "daily"
+      time: "16:45"
+      timezone: "America/New_York"
     allow:
       - dependency-type: "all"
     ignore:
@@ -119,6 +125,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "16:45"
+      timezone: "America/New_York"
     open-pull-requests-limit: 20
     labels:
       - "security"
