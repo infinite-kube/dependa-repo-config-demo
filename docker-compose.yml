@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Database services with security patches needed
+  postgres:
+    image: postgres:13.5-alpine
+    # Current: 13.13-alpine (security patches)
+    # Latest: 16.1-alpine
+    # CVE-2023-2454, CVE-2023-2455 affect this version
+    environment:
+      POSTGRES_DB: demo_db
+      POSTGRES_USER: demo_user
+      POSTGRES_PASSWORD: demo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6.2.6-alpine
+    # Current: 6.2.14-alpine (security patches)
+    # Latest: 7.2.3-alpine
+    # Multiple security fixes available
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  mongodb:
+    image: mongo:4.4.10
+    # Current: 4.4.25 (security patches)
+    # Latest: 7.0.4
+    # Several CVEs fixed in newer versions
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Message queue with outdated image
+  rabbitmq:
+    image: rabbitmq:3.9.11-management-alpine
+    # Current: 3.9.29-management-alpine (patches)
+    # Latest: 3.12.10-management-alpine
+    # Security vulnerabilities in management plugin
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  # Web server with security issues
+  nginx:
+    image: nginx:1.20.2-alpine
+    # Current: 1.20.2-alpine has CVEs
+    # Should use: 1.24.0-alpine or 1.25.3-alpine
+    # CVE-2021-23017, CVE-2022-41741 affect this version
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/build:/usr/share/nginx/html:ro
+
+  # Application servers
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: demo-backend:outdated
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgresql://demo_user:demo_password@postgres:5432/demo_db
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+
+  # Monitoring with outdated images
+  prometheus:
+    image: prom/prometheus:v2.32.1
+    # Current: v2.48.0 (many improvements and fixes)
+    # Security and performance improvements available
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:8.3.3
+    # Current: 10.2.2 (critical security updates)
+    # CVE-2023-1410, CVE-2023-2801 affect older versions
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  # CI/CD tools with security concerns
+  jenkins:
+    image: jenkins/jenkins:2.332.1-lts
+    # Current: 2.426.1-lts (multiple security fixes)
+    # Numerous CVEs fixed since this version
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+  # Container registry with outdated version
+  registry:
+    image: registry:2.7.1
+    # Current: 2.8.3 (security patches)
+    # Various security improvements available
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry_data:/var/lib/registry
+
+  # Elasticsearch with known vulnerabilities
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    # Current: 7.17.15 (security patches for 7.x)
+    # Latest: 8.11.1
+    # Log4j vulnerabilities and other CVEs
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongo_data:
+  prometheus_data:
+  grafana_data:
+  jenkins_home:
+  registry_data:
+
+# Security Notes for Dependabot:
+# This docker-compose file intentionally uses outdated images to demonstrate:
+# 1. Database images with security patches available
+# 2. Web servers with known CVEs
+# 3. Monitoring tools needing updates
+# 4. CI/CD tools with security vulnerabilities
+# 5. Services affected by Log4j and other critical vulnerabilities
+#
+# Dependabot should flag these as high-priority security updates
+# Most of these can be auto-patched (patch version updates)
+# Some may require minor version updates with minimal breaking changes
