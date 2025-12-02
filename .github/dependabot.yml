@@ -4,10 +4,8 @@ updates:
   # ==========================================
   # NPM / NODE.JS CONFIGURATION
   # ==========================================
-
-  # 1. ROOT NPM: Merged Strategy
-  # Combines Section 2's "Dev vs Runtime" grouping + Section 1's labels.
-  # Includes exclusions for heavy packages (AWS SDK) and Ignore rules (ESLint).
+  
+  # 1. ROOT NPM
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -17,12 +15,11 @@ updates:
     labels:
       - "dependencies"
       - "javascript"
-      - "dependabot"
+      - "auto-merge-candidate" # Helper label for our workflow
     commit-message:
       prefix: "chore"
       include: "scope"
-    
-    # Advanced Grouping (from Section 2)
+    # Grouping is key for auto-merging "non-critical" updates efficiently
     groups:
       development-dependencies:
         dependency-type: "development"
@@ -34,35 +31,30 @@ updates:
         update-types: ["minor", "patch"]
         patterns: ["*"]
         exclude-patterns: ["aws-sdk*"]
-    
-    # Specific Ignores
     ignore:
       - dependency-name: "eslint*"
         update-types: ["version-update:semver-patch"]
 
-  # 2. FRONTEND NPM: Specialized Strategy (from Section 2)
-  # Aggressive updates (Major allowed) specifically for the frontend directory.
+  # 2. FRONTEND NPM (Specialized)
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 50
+    open-pull-requests-limit: 10
     versioning-strategy: "increase"
     labels:
       - "dependencies"
-      - "major-update"
       - "frontend"
+    # We do NOT add the auto-merge label here if we want to manually review frontend Major updates
     commit-message:
       prefix: "feat"
-      prefix-development: "chore"
       include: "scope"
 
   # ==========================================
   # PYTHON / PIP CONFIGURATION
   # ==========================================
 
-  # 3. ROOT PIP: General Strategy (from Section 1)
-  # Handles root-level scripts using standard SemVer grouping.
+  # 3. ROOT PIP
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -72,36 +64,35 @@ updates:
       - "dependencies"
       - "python"
     groups:
-      minor-and-patch:
+      # These will be auto-merged by the workflow
+      non-critical:
         patterns: ["*"]
         update-types: ["minor", "patch"]
-      major:
-        patterns: ["*"]
-        update-types: ["major"]
 
-  # 4. BACKEND PIP: Protective Strategy (from Section 2)
-  # Targeted at /backend. Blocks Major updates for Django to ensure stability.
+  # 4. BACKEND PIP (Protective)
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
       interval: "daily"
     labels:
       - "dependencies"
-      - "minor-update"
       - "backend"
     allow:
       - dependency-type: "all"
     ignore:
       - dependency-name: "django"
         versions: ["4.x", "5.x"]
+    groups:
+      # Grouping backend patches for auto-merging
+      backend-patches:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # ==========================================
   # INFRASTRUCTURE & CI/CD
   # ==========================================
 
-  # 5. GITHUB ACTIONS: Merged Strategy
-  # Combines Section 1's labels with Section 2's daily schedule & commit hygiene.
-  # Limit increased to 50 to accommodate the "Security" requirement from Section 2.
+  # 5. GITHUB ACTIONS
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -109,31 +100,30 @@ updates:
     open-pull-requests-limit: 50
     labels:
       - "dependencies"
-      - "github-actions"
       - "ci-cd"
-      - "security" # Preserved from Section 2's bottom block
     commit-message:
       prefix: "fix"
-      prefix-development: "fix"
       include: "scope"
     groups:
+      # Group all actions together to reduce noise
       all-actions:
         patterns: ["*"]
 
-  # 6. DOCKER: Merged Strategy
-  # Combines Section 1's labels with Section 2's daily schedule & commit hygiene.
-  # Limit increased to 50 to accommodate the "Security" requirement from Section 2.
+  # 6. DOCKER
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 50
     labels:
       - "dependencies"
       - "docker"
       - "infrastructure"
-      - "security" # Preserved from Section 2's bottom block
     commit-message:
       prefix: "fix"
-      prefix-development: "fix"
       include: "scope"
+    groups:
+      # Group docker patches
+      docker-images:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
