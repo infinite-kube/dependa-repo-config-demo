@@ -2,87 +2,46 @@
 version: 2
 updates:
   # ==========================================
-  # SECTION 1 CONFIGURATION
+  # NPM / NODE.JS CONFIGURATION
   # ==========================================
-  
-  # === NPM DEPENDENCIES (ROOT) ===
+
+  # 1. ROOT NPM: Merged Strategy
+  # Combines Section 2's "Dev vs Runtime" grouping + Section 1's labels.
+  # Includes exclusions for heavy packages (AWS SDK) and Ignore rules (ESLint).
   - package-ecosystem: "npm"
     directory: "/"
-    
-    # Tune cadence: Weekly is perfect for scale. Tuesday 9AM is fine.
     schedule:
       interval: "daily"
-
-    # MERGE UPDATE: Increased from 3 to 10. 
-    # At scale, 3 is too strict and blocks important security updates if groups are pending.
     open-pull-requests-limit: 10
-
-    # Housekeeping: Keep these, they are excellent for repo hygiene.
+    rebase-strategy: "auto"
     labels:
       - "dependencies"
+      - "javascript"
       - "dependabot"
     commit-message:
       prefix: "chore"
       include: "scope"
-    rebase-strategy: "auto"
-
-    # === GROUPING STRATEGY ===
+    
+    # Advanced Grouping (from Section 2)
     groups:
-      # MERGE UPDATE: Broadened to Catch-All ("*")
-      # Instead of listing specific tools (eslint, etc.), we group ALL dev dependencies.
       development-dependencies:
         dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-        patterns:
-          - "*" 
-        # Explicitly exclude packages you want to review individually
-        exclude-patterns:
-          - "webpack" 
-
-      # Group all production dependencies for minor and patch updates.
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+        exclude-patterns: ["webpack"]
       runtime-dependencies:
         dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-        patterns:
-          - "*"
-        # MERGE UPDATE: Exclusion Example
-        # Exclude high-risk/heavy packages so they get their own isolated PR.
-        exclude-patterns:
-          - "aws-sdk*"
-
-    # === SCOPING & IGNORES ===
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+        exclude-patterns: ["aws-sdk*"]
+    
+    # Specific Ignores
     ignore:
       - dependency-name: "eslint*"
         update-types: ["version-update:semver-patch"]
 
-    allow:
-      - dependency-type: "direct"
-
-  # === GITHUB ACTIONS ===
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5 # Increased slightly
-    labels:
-      - "ci"
-      - "dependencies"
-    groups:
-      # Grouping Actions is also smart at scale
-      all-actions:
-        patterns:
-          - "*"
-
-  # ==========================================
-  # SECTION 2 CONFIGURATION
-  # ==========================================
-
-  # Major Updates Example - Allow all updates including major versions
-  # Targeted specifically at the /frontend directory
+  # 2. FRONTEND NPM: Specialized Strategy (from Section 2)
+  # Aggressive updates (Major allowed) specifically for the frontend directory.
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
@@ -92,48 +51,88 @@ updates:
     labels:
       - "dependencies"
       - "major-update"
+      - "frontend"
     commit-message:
       prefix: "feat"
       prefix-development: "chore"
       include: "scope"
-    
-  # Minor Updates Example - Restrict to minor and patch only
+
+  # ==========================================
+  # PYTHON / PIP CONFIGURATION
+  # ==========================================
+
+  # 3. ROOT PIP: General Strategy (from Section 1)
+  # Handles root-level scripts using standard SemVer grouping.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # 4. BACKEND PIP: Protective Strategy (from Section 2)
+  # Targeted at /backend. Blocks Major updates for Django to ensure stability.
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
       interval: "daily"
-    allow:
-      - dependency-type: "all"
-    ignore:
-      # Ignore major version updates for critical packages
-      - dependency-name: "django"
-        versions: ["4.x", "5.x"]
     labels:
       - "dependencies"
       - "minor-update"
-    
-  # Security Patching Example - Security updates only
+      - "backend"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      - dependency-name: "django"
+        versions: ["4.x", "5.x"]
+
+  # ==========================================
+  # INFRASTRUCTURE & CI/CD
+  # ==========================================
+
+  # 5. GITHUB ACTIONS: Merged Strategy
+  # Combines Section 1's labels with Section 2's daily schedule & commit hygiene.
+  # Limit increased to 50 to accommodate the "Security" requirement from Section 2.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 50
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci-cd"
+      - "security" # Preserved from Section 2's bottom block
+    commit-message:
+      prefix: "fix"
+      prefix-development: "fix"
+      include: "scope"
+    groups:
+      all-actions:
+        patterns: ["*"]
+
+  # 6. DOCKER: Merged Strategy
+  # Combines Section 1's labels with Section 2's daily schedule & commit hygiene.
+  # Limit increased to 50 to accommodate the "Security" requirement from Section 2.
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 50
     labels:
-      - "security"
-      - "patch"
-    commit-message:
-      prefix: "fix"
-      prefix-development: "fix"
-      include: "scope"
-
-   - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 50
-    labels:
-      - "security"
-      - "patch"
+      - "dependencies"
+      - "docker"
+      - "infrastructure"
+      - "security" # Preserved from Section 2's bottom block
     commit-message:
       prefix: "fix"
       prefix-development: "fix"
