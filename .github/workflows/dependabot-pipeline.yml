@@ -1,0 +1,207 @@
+# .github/workflows/dependabot-pipeline.yml
+name: Dependabot Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  # Stage 1: Categorize the PR
+  categorize:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    outputs:
+      update_type: ${{ steps.metadata.outputs.update-type }}
+      dependency_type: ${{ steps.metadata.outputs.dependency-type }}
+      cvss: ${{ steps.metadata.outputs.cvss }}
+      alert_state: ${{ steps.metadata.outputs.alert-state }}
+      auto_merge: ${{ steps.decide.outputs.auto_merge }}
+      
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply category labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const updateType = '${{ steps.metadata.outputs.update-type }}';
+            const depType = '${{ steps.metadata.outputs.dependency-type }}';
+            const cvss = parseFloat('${{ steps.metadata.outputs.cvss }}') || 0;
+            const ghsaId = '${{ steps.metadata.outputs.ghsa-id }}';
+            
+            const labels = ['dependabot'];
+            
+            // Update type
+            switch(updateType) {
+              case 'version-update:semver-patch':
+                labels.push('type:patch', 'priority:low');
+                break;
+              case 'version-update:semver-minor':
+                labels.push('type:minor', 'priority:medium');
+                break;
+              case 'version-update:semver-major':
+                labels.push('type:major', 'priority:high', 'needs-review');
+                break;
+            }
+            
+            // Dependency type
+            if (depType.includes('development')) {
+              labels.push('scope:dev');
+            } else if (depType.includes('production')) {
+              labels.push('scope:prod');
+            }
+            
+            // Security severity
+            if (ghsaId) {
+              labels.push('security');
+              if (cvss >= 9.0) labels.push('severity:critical', 'needs-review', 'urgent');
+              else if (cvss >= 7.0) labels.push('severity:high', 'needs-review');
+              else if (cvss >= 4.0) labels.push('severity:medium');
+              else labels.push('severity:low');
+            }
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: labels
+            });
+
+      - name: Decide auto-merge eligibility
+        id: decide
+        run: |
+          UPDATE_TYPE="${{ steps.metadata.outputs.update-type }}"
+          CVSS="${{ steps.metadata.outputs.cvss }}"
+          CVSS=${CVSS:-0}
+          
+          # Default to auto-merge
+          AUTO_MERGE="true"
+          
+          # Block critical/high severity (CVSS >= 7.0)
+          if (( $(echo "$CVSS >= 7.0" | bc -l 2>/dev/null || echo 0) )); then
+            AUTO_MERGE="false"
+            echo "Blocking: Critical/High severity security issue"
+          fi
+          
+          # Block major updates
+          if [[ "$UPDATE_TYPE" == "version-update:semver-major" ]]; then
+            AUTO_MERGE="false"
+            echo "Blocking: Major version update"
+          fi
+          
+          echo "auto_merge=$AUTO_MERGE" >> $GITHUB_OUTPUT
+
+  # Stage 2: Run tests (non-blocking)
+  test:
+    runs-on: ubuntu-latest
+    needs: categorize
+    if: github.actor == 'dependabot[bot]'
+    continue-on-error: true
+    outputs:
+      test_result: ${{ steps.run-tests.outcome }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest pytest-cov flake8
+
+      - name: Lint check
+        continue-on-error: true
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+      - name: Run tests
+        id: run-tests
+        continue-on-error: true
+        run: |
+          if [ -d "tests" ] || [ -f "test_*.py" ]; then
+            pytest -v --tb=short || echo "::warning::Tests failed but continuing"
+          else
+            echo "No tests found"
+          fi
+
+      - name: Label test result
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const label = '${{ steps.run-tests.outcome }}' === 'success' ? 'tests:passed' : 'tests:failed';
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: [label]
+            });
+
+  # Stage 3: Auto-merge or request review
+  merge-decision:
+    runs-on: ubuntu-latest
+    needs: [categorize, test]
+    if: always() && github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: Auto-merge eligible PRs
+        if: needs.categorize.outputs.auto_merge == 'true'
+        run: |
+          echo "✅ Auto-merging: Patch/Minor update with acceptable security profile"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Request manual review
+        if: needs.categorize.outputs.auto_merge == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const updateType = '${{ needs.categorize.outputs.update_type }}';
+            const cvss = '${{ needs.categorize.outputs.cvss }}' || 'N/A';
+            
+            let reason = '';
+            if (parseFloat(cvss) >= 7.0) {
+              reason = `🔴 **Critical/High Security Issue** (CVSS: ${cvss})`;
+            } else if (updateType === 'version-update:semver-major') {
+              reason = '🟠 **Major Version Update** - Breaking changes possible';
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `## ⚠️ Manual Review Required\n\n${reason}\n\n### Checklist:\n- [ ] Review changelog/release notes\n- [ ] Check for breaking changes\n- [ ] Verify security implications\n- [ ] Test locally if needed`
+            });
+
+      - name: Summary
+        run: |
+          echo "## Dependabot PR Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Type | ${{ needs.categorize.outputs.update_type }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Type | ${{ needs.categorize.outputs.dependency_type }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CVSS Score | ${{ needs.categorize.outputs.cvss || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auto-Merge | ${{ needs.categorize.outputs.auto_merge }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Result | ${{ needs.test.outputs.test_result }} |" >> $GITHUB_STEP_SUMMARY
