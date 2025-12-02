@@ -2,43 +2,43 @@
 # These packages are intentionally set to versions that have minor updates available
 
 # Web Framework
-Django==4.1.0  # Current: 4.1.13 (patch updates), 4.2.x available (minor)
-djangorestframework==3.14.0  # Minor updates available
+Django==4.2.26  # Current: 4.1.13 (patch updates), 4.2.x available (minor)
+djangorestframework==3.15.2  # Minor updates available
 django-cors-headers==3.13.0  # Version 3.14.x available
 
 # Database
 psycopg2-binary==2.9.5  # Version 2.9.9 available (patch)
-redis==4.3.0  # Version 4.3.6, 4.4.x, 4.5.x available
-celery==5.2.0  # Version 5.2.7, 5.3.x available
+redis==4.4.4  # Version 4.3.6, 4.4.x, 4.5.x available
+celery==5.6.0  # Version 5.2.7, 5.3.x available
 
 # Authentication & Security
 PyJWT==2.6.0  # Version 2.8.x available
-cryptography==38.0.0  # Version 38.0.4, 39.x, 40.x available
+cryptography==44.0.1  # Version 38.0.4, 39.x, 40.x available
 python-decouple==3.6  # Version 3.8 available
 bcrypt==4.0.0  # Version 4.0.1, 4.1.x available
 
 # API & Serialization
 marshmallow==3.19.0  # Version 3.20.x available
-pydantic==1.10.0  # Version 1.10.13 available (v2.x is major)
+pydantic==1.10.13  # Version 1.10.13 available (v2.x is major)
 python-dateutil==2.8.1  # Version 2.8.2 available
 
 # Testing & Quality
 pytest==7.2.0  # Version 7.2.2, 7.3.x, 7.4.x available
 pytest-django==4.5.0  # Version 4.5.2 available
 coverage==6.5.0  # Version 6.5.0 -> 7.x available
-black==22.10.0  # Version 22.12.0, 23.x available
+black==24.3.0  # Version 22.12.0, 23.x available
 flake8==5.0.0  # Version 5.0.4, 6.x available
 mypy==0.982  # Version 0.991, 1.x available
 
 # Utilities
-requests==2.28.0  # Version 2.28.2, 2.29.x, 2.30.x, 2.31.x available
-Pillow==9.3.0  # Version 9.3.0 -> 9.5.x, 10.x available
+requests==2.32.4  # Version 2.28.2, 2.29.x, 2.30.x, 2.31.x available
+Pillow==10.3.0  # Version 9.3.0 -> 9.5.x, 10.x available
 pandas==1.5.0  # Version 1.5.3, 2.x available (2.x is major)
 numpy==1.23.0  # Version 1.23.5, 1.24.x available
 python-dotenv==0.21.0  # Version 0.21.1, 1.x available
 
 # Monitoring & Logging
-sentry-sdk==1.12.0  # Version 1.12.1, 1.13.x through 1.30.x available
+sentry-sdk==1.45.1  # Version 1.12.1, 1.13.x through 1.30.x available
 prometheus-client==0.15.0  # Version 0.16.x, 0.17.x available
 
 # Cloud Services
