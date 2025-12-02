@@ -1,4 +1,3 @@
-# .github/workflows/dependabot-auto-merge.yml
 name: Dependabot Auto-Merge
 
 on:
@@ -8,13 +7,17 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
-  # Run tests but don't block on failure
+  # ------------------------------------------------------------------
+  # JOB 1: TEST
+  # Runs tests to ensure the dependency doesn't break the build.
+  # ------------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
-    continue-on-error: true  # Tests run but don't block
+    continue-on-error: true # Allow workflow to proceed to labeling even if tests fail
     
     steps:
       - name: Checkout
@@ -28,8 +31,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # Try to install requirements, ignore if missing
           pip install -r requirements.txt 2>/dev/null || echo "No requirements.txt found"
-          pip install pytest pytest-cov 2>/dev/null || echo "pytest not needed"
+          # Try to install test runners
+          pip install pytest pytest-cov 2>/dev/null || echo "pytest installation skipped"
 
       - name: Run tests
         id: tests
@@ -41,12 +46,13 @@ jobs:
             echo "No tests found - skipping"
           fi
 
-      - name: Add test result label
+      - name: Label test result
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const testResult = '${{ steps.tests.outcome }}';
+            // Determine label based on success or failure
             const label = testResult === 'success' ? 'tests-passed' : 'tests-failed';
             
             await github.rest.issues.addLabels({
@@ -56,7 +62,10 @@ jobs:
               labels: [label]
             });
 
-  # Evaluate and auto-merge eligible PRs
+  # ------------------------------------------------------------------
+  # JOB 2: EVALUATE & AUTO-MERGE
+  # Checks metadata to determine if the update is safe (non-critical).
+  # ------------------------------------------------------------------
   auto-merge:
     runs-on: ubuntu-latest
     needs: test
@@ -69,91 +78,89 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Evaluate auto-merge eligibility
-        id: evaluate
+      - name: Check safety and decide
+        id: check
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // 1. Get Metadata
             const updateType = '${{ steps.metadata.outputs.update-type }}';
             const dependencyType = '${{ steps.metadata.outputs.dependency-type }}';
             const cvss = parseFloat('${{ steps.metadata.outputs.cvss }}') || 0;
             const alertState = '${{ steps.metadata.outputs.alert-state }}';
             
-            let shouldAutoMerge = false;
+            let shouldMerge = false;
             let reason = '';
-            
-            // BLOCK: Critical or High severity security issues (CVSS >= 7.0)
-            if (cvss >= 7.0) {
-              reason = `Security issue with CVSS ${cvss} requires manual review`;
-              console.log(`❌ ${reason}`);
-              core.setOutput('should_merge', 'false');
-              core.setOutput('reason', reason);
-              return;
+            let labelToAdd = '';
+
+            console.log(`Update Type: ${updateType}`);
+            console.log(`CVSS Score: ${cvss}`);
+
+            // 2. LOGIC: Define what blocks a merge
+            const isMajor = updateType === 'version-update:semver-major';
+            const isHighSeverity = cvss >= 7.0;
+
+            if (isMajor) {
+              reason = 'Major version update detected (potential breaking changes). Manual review required.';
+              labelToAdd = 'requires-manual-review';
+            } else if (isHighSeverity) {
+               reason = `High severity security issue (CVSS ${cvss}). Manual review required.`;
+               labelToAdd = 'critical';
+            } else {
+              // 3. LOGIC: Define what allows a merge
+              // Allow: Patch, Minor, or Development dependencies (that aren't major)
+              if (
+                updateType === 'version-update:semver-patch' ||
+                updateType === 'version-update:semver-minor' ||
+                (dependencyType === 'direct:development' && !isMajor)
+              ) {
+                shouldMerge = true;
+                reason = 'Non-critical update (Minor/Patch/Dev). Auto-merging.';
+                labelToAdd = 'auto-merge';
+              }
             }
+
+            console.log(shouldMerge ? `✅ ${reason}` : `❌ ${reason}`);
             
-            // BLOCK: Major version updates
-            if (updateType === 'version-update:semver-major') {
-              reason = 'Major version update requires manual review';
-              console.log(`❌ ${reason}`);
-              core.setOutput('should_merge', 'false');
-              core.setOutput('reason', reason);
-              return;
-            }
-            
-            // AUTO-MERGE: Patch updates
-            if (updateType === 'version-update:semver-patch') {
-              shouldAutoMerge = true;
-              reason = 'Patch update - auto-merging';
-            }
-            
-            // AUTO-MERGE: Minor updates
-            if (updateType === 'version-update:semver-minor') {
-              shouldAutoMerge = true;
-              reason = 'Minor update - auto-merging';
-            }
-            
-            // AUTO-MERGE: Dev dependencies (any update type except major)
-            if (dependencyType === 'direct:development' && updateType !== 'version-update:semver-major') {
-              shouldAutoMerge = true;
-              reason = 'Development dependency - auto-merging';
-            }
-            
-            // AUTO-MERGE: Low/Medium severity security fixes
-            if (alertState === 'open' && cvss > 0 && cvss < 7.0) {
-              shouldAutoMerge = true;
-              reason = `Security fix (CVSS ${cvss}) - auto-merging`;
-            }
-            
-            console.log(shouldAutoMerge ? `✅ ${reason}` : `❌ ${reason}`);
-            core.setOutput('should_merge', shouldAutoMerge.toString());
+            // Output results for next steps
+            core.setOutput('should_merge', shouldMerge.toString());
             core.setOutput('reason', reason);
+            core.setOutput('label_to_add', labelToAdd);
 
-      - name: Enable auto-merge
-        if: steps.evaluate.outputs.should_merge == 'true'
-        run: gh pr merge --auto --squash "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Add review-required comment
-        if: steps.evaluate.outputs.should_merge == 'false'
+      - name: Label PR
+        if: steps.check.outputs.label_to_add != ''
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const reason = '${{ steps.evaluate.outputs.reason }}';
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: `⚠️ **Manual Review Required**\n\nReason: ${reason}\n\nPlease review this PR before merging.`
-            });
-            
+            const label = '${{ steps.check.outputs.label_to_add }}';
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              labels: ['requires-review', 'manual-approval-needed']
+              labels: [label]
+            });
+
+      - name: Auto-merge
+        if: steps.check.outputs.should_merge == 'true'
+        run: |
+          echo "Merging PR: ${{ steps.check.outputs.reason }}"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment if Manual Review Required
+        if: steps.check.outputs.should_merge == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const reason = '${{ steps.check.outputs.reason }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `⚠️ **Manual Review Required**\n\nAuto-merge blocked.\nReason: ${reason}`
             });
