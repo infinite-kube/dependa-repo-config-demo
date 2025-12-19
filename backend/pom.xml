@@ -73,7 +73,7 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.17.1</version>
+            <version>2.25.3</version>
             <!-- CRITICAL: Contains CVE-2021-44228 (Log4Shell) -->
             <!-- Must update to at least 2.17.0 -->
         </dependency>
