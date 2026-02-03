@@ -9,7 +9,7 @@
   "dependencies": {
     "lodash": "4.17.23", 
     "axios": "0.30.2",
-    "@aws-sdk/client-s3": "3.975.0"
+    "@aws-sdk/client-s3": "3.981.0"
   },
   "devDependencies": {
     "eslint": "7.40.0",
