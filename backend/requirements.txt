@@ -32,7 +32,7 @@ mypy==0.982  # Version 0.991, 1.x available
 
 # Utilities
 requests==2.32.4  # Version 2.28.2, 2.29.x, 2.30.x, 2.31.x available
-Pillow==10.3.0  # Version 9.3.0 -> 9.5.x, 10.x available
+Pillow==12.1.1  # Version 9.3.0 -> 9.5.x, 10.x available
 pandas==1.5.0  # Version 1.5.3, 2.x available (2.x is major)
 numpy==1.23.0  # Version 1.23.5, 1.24.x available
 python-dotenv==0.21.0  # Version 0.21.1, 1.x available
