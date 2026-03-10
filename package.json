@@ -12,7 +12,7 @@
     "@aws-sdk/client-s3": "3.1005.0"
   },
   "devDependencies": {
-    "eslint": "7.40.0",
+    "eslint": "10.0.3",
     "prettier": "3.8.1",
     "jest": "30.3.0"
   }
