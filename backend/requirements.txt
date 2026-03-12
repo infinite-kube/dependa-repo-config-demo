@@ -26,7 +26,7 @@ python-dateutil==2.8.1  # Version 2.8.2 available
 pytest==7.2.0  # Version 7.2.2, 7.3.x, 7.4.x available
 pytest-django==4.5.0  # Version 4.5.2 available
 coverage==6.5.0  # Version 6.5.0 -> 7.x available
-black==24.3.0  # Version 22.12.0, 23.x available
+black==26.3.1  # Version 22.12.0, 23.x available
 flake8==5.0.0  # Version 5.0.4, 6.x available
 mypy==0.982  # Version 0.991, 1.x available
 
