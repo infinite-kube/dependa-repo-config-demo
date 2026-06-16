@@ -12,7 +12,7 @@ redis==4.4.4  # Version 4.3.6, 4.4.x, 4.5.x available
 celery==5.6.0  # Version 5.2.7, 5.3.x available
 
 # Authentication & Security
-PyJWT==2.6.0  # Version 2.8.x available
+PyJWT==2.13.0  # Version 2.8.x available
 cryptography==46.0.7  # Version 38.0.4, 39.x, 40.x available
 python-decouple==3.6  # Version 3.8 available
 bcrypt==4.0.0  # Version 4.0.1, 4.1.x available
