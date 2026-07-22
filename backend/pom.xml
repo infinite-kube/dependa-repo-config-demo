@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.11</version>
+            <version>42.7.12</version>
             <!-- Current: 42.7.1 (security fixes) -->
         </dependency>
         
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.22.0</version>
+            <version>2.22.1</version>
             <!-- Multiple CVEs fixed in 2.15.3 -->
         </dependency>
 
